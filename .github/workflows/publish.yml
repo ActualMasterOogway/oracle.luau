@@ -37,7 +37,7 @@ jobs:
     - build
     runs-on: ubuntu-latest
     environment:
-      name: pypi
+      name: PyPI
       url: https://pypi.org/p/oracle.luau
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
