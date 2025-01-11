@@ -4,8 +4,14 @@
         {
             "label": "build", // Descriptive label for the task
             "type": "shell", // Task type: shell command execution
-            "command": "py", // Command to execute
+            "command": "Remove-Item", // Command to execute
             "args": [
+                "-Path",
+                "dist/*",
+                "-Recurse",
+                "-Force",
+                "&&",
+                "py",
                 "setup.py",
                 "sdist",
                 "bdist_wheel",

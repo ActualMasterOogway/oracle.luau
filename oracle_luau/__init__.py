@@ -94,7 +94,7 @@ class Decompiler:
             async with self.semaphore:
                 async with aiohttp.ClientSession() as session:
                     try:
-                        async with session.post(self.base_url, headers=headers, data=post_data) as response:
+                        async with session.post(self.base_url, headers=headers, data=post_data, timeout=60) as response:
                             match response.status:
                                 case 200:
                                     return await response.text()
@@ -109,6 +109,9 @@ class Decompiler:
                                     raise Exception('-- Bad request! Check your decompliation options and try again.')
                                 case 502:
                                     logging.warning(f"Vorp? 👽 (Bad Gateway 502, this should not happen). Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                                    await asyncio.sleep(self.retry_delay * (2 ** attempt))
+                                case 524:
+                                    logging.warning(f"Timeout 524. Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
                                     await asyncio.sleep(self.retry_delay * (2 ** attempt))
                                 case _:
                                     raise Exception(f'-- Something went wrong when decompiling: {response.status}')
@@ -168,7 +171,7 @@ class SyncDecompiler:
             try:
                 self.request_queue.put(0)
                 
-                response = self.urllib3.request('POST', self.base_url, headers=headers, body=post_data)
+                response = self.urllib3.request('POST', self.base_url, headers=headers, body=post_data, timeout=60)
 
                 self.request_queue.get()
                 self.request_queue.task_done()
@@ -187,6 +190,9 @@ class SyncDecompiler:
                         raise Exception('-- Bad request! Check your decompliation options and try again.')
                     case 502:
                         logging.warning(f"Vorp? 👽 (Bad Gateway 502, this should not happen). Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                        self.time.sleep(self.retry_delay * (2 ** attempt))
+                    case 524:
+                        logging.warning(f"Timeout 524. Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
                         self.time.sleep(self.retry_delay * (2 ** attempt))
                     case _:
                         raise Exception(f'-- Something went wrong when decompiling: {response.status}')
