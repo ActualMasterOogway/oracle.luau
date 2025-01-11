@@ -22,7 +22,7 @@ setup(
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
-        "License :: OSI Approved :: GPL 3.0 License",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     ],
     license="GPL-3.0",
     keywords = [
@@ -34,6 +34,11 @@ setup(
         "deserializer",
         "compile"
     ],
+    project_urls={
+       "Documentation": "https://your-documentation-url.com",
+       "GitHub": "https://github.com/ActualMasterOogway/oracle.luau",
+       "Bug Tracker": "https://github.com/ActualMasterOogway/oracle.luau/issues",
+    },
     python_requires=">=3.6",
     install_requires=[
         "aiohttp>=3.8.1"

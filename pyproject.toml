@@ -12,37 +12,6 @@ license = { file = "LICENSE" }
 authors = [
     { name = "ActualMasterOogway", email = "realmasteroogway.contact@gmail.com" }
 ]
-classifiers=[
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "License :: OSI Approved :: GPL 3.0 License",
-]
-keywords = [
-    "roblox", 
-    "lua", 
-    "luau",
-    "decompiler",
-    "bytecode",
-    "deserializer",
-    "compile"
-]
-dependencies = [
-    "aiohttp>=3.8.1",
-]
-
-[project.urls]
-GitHub = "https://github.com/ActualMasterOogway/oracle.luau"
-Documentation = "https://actualmasteroogway.github.io/oracle.luau"
-"Issue Tracker" = "https://github.com/ActualMasterOogway/oracle.luau/issues"
 
 [tool.setuptools]
 packages = [

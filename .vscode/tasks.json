@@ -1,0 +1,31 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build", // Descriptive label for the task
+            "type": "shell", // Task type: shell command execution
+            "command": "py", // Command to execute
+            "args": [
+                "setup.py",
+                "sdist",
+                "bdist_wheel",
+                "&&",
+                "twine",
+                "check",
+                "dist/*",
+            ],
+            "group": {
+				"kind": "build",
+				"isDefault": true
+			},
+            "presentation": {
+                "reveal": "always", // Always show the output panel
+                "panel": "shared" // Share the output panel with other tasks
+            },
+            "options": {
+                "cwd": "${workspaceFolder}" // Set the working directory to the project root
+            },
+            "problemMatcher": [] // No problem matcher needed for this task
+        }
+    ]
+}
