@@ -1,8 +1,21 @@
+version = "1.0.1"
+
 from setuptools import setup, find_packages
+
+with open("pyproject.toml", "r") as f:
+    lines = f.readlines()
+    for idx, line in enumerate(lines):
+        print(idx)
+        if "version" in line:
+            with open("pyproject.toml", "w") as ff:
+                lines[idx] = f'version = "{version}"\n'
+                ff.write("".join(lines))
+
+            break
 
 setup(
     name="oracle.luau",
-    version="1.0.0",
+    version=version,
     description="An API wrapper for the Oracle Luau decompiler.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",

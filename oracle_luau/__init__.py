@@ -95,19 +95,24 @@ class Decompiler:
                 async with aiohttp.ClientSession() as session:
                     try:
                         async with session.post(self.base_url, headers=headers, data=post_data) as response:
-                            if response.status == 200:
-                                return await response.text()
-                            elif response.status == 429:
-                                logging.warning(f"Rate limited. Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
-                                await asyncio.sleep(self.retry_delay * (2 ** attempt))
-                            elif response.status == 402:
-                                raise Exception('-- API key has expired or is invalid')
-                            elif response.status == 500:
-                                raise Exception('-- Decompilation failed!')
-                            elif response.status == 400:
-                                raise Exception('-- Bad request! Check your decompiler options.')
-                            else:
-                                raise Exception(f'-- Unexpected error: {response.status}')
+                            match response.status:
+                                case 200:
+                                    return await response.text()
+                                case 429:
+                                    logging.warning(f"Rate limited. Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                                    await asyncio.sleep(self.retry_delay * (2 ** attempt))
+                                case 402:
+                                    raise Exception('-- API key has expired or is invalid')
+                                case 500:
+                                    raise Exception('-- Decompilation failed!')
+                                case 400:
+                                    raise Exception('-- Bad request! Check your decompliation options and try again.')
+                                case 502:
+                                    logging.warning(f"Vorp? 👽 (Bad Gateway 502, this should not happen). Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                                    await asyncio.sleep(self.retry_delay * (2 ** attempt))
+                                case _:
+                                    raise Exception(f'-- Something went wrong when decompiling: {response.status}')
+
                     except aiohttp.ClientError as e:
                         if attempt == self.retry_attempts:
                             raise Exception(f'-- Request failed after retries: {e}')
@@ -180,6 +185,9 @@ class SyncDecompiler:
                         raise Exception('-- Decompilation failed!')
                     case 400:
                         raise Exception('-- Bad request! Check your decompliation options and try again.')
+                    case 502:
+                        logging.warning(f"Vorp? 👽 (Bad Gateway 502, this should not happen). Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                        self.time.sleep(self.retry_delay * (2 ** attempt))
                     case _:
                         raise Exception(f'-- Something went wrong when decompiling: {response.status}')
 
