@@ -62,13 +62,14 @@ class Decompiler:
     :type max_concurrent_requests: int
     """
 
-    def __init__(self, key: str, decompiler_options: DecompilerOptions = DecompilerOptions(), base_url: str = 'https://oracle.mshq.dev/decompile', max_concurrent_requests: int = 5, retry_attempts: int = 3, retry_delay: int = 5):
+    def __init__(self, key: str, decompiler_options: DecompilerOptions = DecompilerOptions(), base_url: str = 'https://oracle.mshq.dev/decompile', max_concurrent_requests: int = 5, retry_attempts: int = 3, retry_delay: int = 5, logging: bool = False):
         self.key = key
         self.base_url = base_url
         self.max_concurrent_requests = max_concurrent_requests
         self.decompiler_options = decompiler_options()
         self.retry_attempts = retry_attempts
         self.retry_delay = retry_delay
+        self.logging = logging
         
         self.semaphore = asyncio.Semaphore(max_concurrent_requests)
 
@@ -99,7 +100,9 @@ class Decompiler:
                                 case 200:
                                     return await response.text()
                                 case 429:
-                                    logging.warning(f"Rate limited. Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                                    if self.logging:
+                                        logging.warning(f"Rate limited. Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                                    
                                     await asyncio.sleep(self.retry_delay * (2 ** attempt))
                                 case 402:
                                     raise Exception('-- API key has expired or is invalid')
@@ -108,10 +111,14 @@ class Decompiler:
                                 case 400:
                                     raise Exception('-- Bad request! Check your decompliation options and try again.')
                                 case 502:
-                                    logging.warning(f"Vorp? 👽 (Bad Gateway 502, this should not happen). Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                                    if self.logging:
+                                        logging.warning(f"Vorp? 👽 (Bad Gateway 502, this should not happen). Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                                    
                                     await asyncio.sleep(self.retry_delay * (2 ** attempt))
                                 case 524:
-                                    logging.warning(f"Timeout 524. Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                                    if self.logging:
+                                        logging.warning(f"Timeout 524. Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                                    
                                     await asyncio.sleep(self.retry_delay * (2 ** attempt))
                                 case _:
                                     raise Exception(f'-- Something went wrong when decompiling: {response.status}')
@@ -120,23 +127,14 @@ class Decompiler:
                         if attempt == self.retry_attempts:
                             raise Exception(f'-- Request failed after retries: {e}')
                         else:
-                            logging.warning(f"Request failed: {e}. Retrying...")
+                            if self.logging:
+                                logging.warning(f"Request failed: {e}. Retrying...")
+                            
                             await asyncio.sleep(self.retry_delay * (2 ** attempt))
                             
 class SyncDecompiler:
-    """
-    A synchronous class to handle decompilation requests to the decompilation service.
-
-    :param key: The API key for authorization.
-    :type key: str
-    :param base_url: The base URL for the decompilation service.
-    :type base_url: str
-    :param max_concurrent_requests: The maximum number of concurrent requests per key.
-    :type max_concurrent_requests: int
-    """
-
-    def __init__(self, key: str, decompiler_options: DecompilerOptions = DecompilerOptions(), base_url: str = 'https://oracle.mshq.dev/decompile', max_concurrent_requests: int = 5, retry_attempts: int = 3, retry_delay: int = 5):
-        import queue, urllib3, time
+    def __init__(self, key: str, decompiler_options: DecompilerOptions = DecompilerOptions(), base_url: str = 'https://oracle.mshq.dev/decompile', max_concurrent_requests: int = 5, retry_attempts: int = 3, retry_delay: int = 5, logging: bool = False):
+        import urllib3, queue, time
         
         self.key = key
         self.base_url = base_url
@@ -144,22 +142,16 @@ class SyncDecompiler:
         self.decompiler_options = decompiler_options()
         self.retry_attempts = retry_attempts
         self.retry_delay = retry_delay
-        
-        self.urllib3 = urllib3
+        self.logging = logging
+
         self.time = time
+        self.urllib3 = urllib3
+        self.queue = queue
+        
+        self.http = urllib3.PoolManager(maxsize=max_concurrent_requests, block=True)
         self.request_queue = queue.Queue(maxsize=self.max_concurrent_requests)
 
     def decompile(self, script: bytes):
-        """
-        Sends a decompilation request for the given script.
-
-        :param script: The script to decompile, as bytes.
-        :type script: bytes
-        :raises Exception: If the request fails or the server returns an error status.
-        :returns: The decompiled script as a string.
-        :rtype: str
-        """
-
         post_data = '{"script": "' + base64.b64encode(script).decode('utf-8') + '", "decompilerOptions": ' + self.decompiler_options +'}'
 
         headers = {
@@ -169,18 +161,15 @@ class SyncDecompiler:
 
         for attempt in range(self.retry_attempts + 1):
             try:
-                self.request_queue.put(0)
-                
-                response = self.urllib3.request('POST', self.base_url, headers=headers, body=post_data, timeout=60)
-
-                self.request_queue.get()
-                self.request_queue.task_done()
+                response = self.http.request('POST', self.base_url, headers=headers, body=post_data, timeout=60.0) # Use http.request
 
                 match response.status:
                     case 200:
                         return response.data.decode('utf-8')
                     case 429:
-                        logging.warning(f"Rate limited. Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                        if self.logging:
+                            logging.warning(f"Rate limited. Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                        
                         self.time.sleep(self.retry_delay * (2 ** attempt))
                     case 402:
                         raise Exception('-- API key has expired or is invalid')
@@ -189,20 +178,29 @@ class SyncDecompiler:
                     case 400:
                         raise Exception('-- Bad request! Check your decompliation options and try again.')
                     case 502:
-                        logging.warning(f"Vorp? 👽 (Bad Gateway 502, this should not happen). Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                        if self.logging:
+                            logging.warning(f"Vorp? 👽 (Bad Gateway 502, this should not happen). Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                        
                         self.time.sleep(self.retry_delay * (2 ** attempt))
                     case 524:
-                        logging.warning(f"Timeout 524. Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                        if self.logging:
+                            logging.warning(f"Timeout 524. Retrying in {self.retry_delay * (2 ** attempt)} seconds...")
+                        
                         self.time.sleep(self.retry_delay * (2 ** attempt))
                     case _:
                         raise Exception(f'-- Something went wrong when decompiling: {response.status}')
 
-            except self.requests.exceptions.RequestException as e:
-                self.request_queue.get()
-                self.request_queue.task_done()
-                
+            except self.urllib3.exceptions.MaxRetryError as e:
                 if attempt == self.retry_attempts:
-                    raise Exception(f'-- Request failed after multiple retries: {e}')
+                    raise Exception(f"-- Request failed after multiple retries: {e}") from e
                 else:
-                    logging.warning(f"Request failed: {e}. Retrying...")
+                    if self.logging:
+                        logging.warning(f"Request failed: {e}. Retrying...")
                     self.time.sleep(self.retry_delay * (2 ** attempt))
+            except Exception as e:
+                if attempt == self.retry_attempts:
+                    raise Exception(f"-- Request failed after multiple retries: {e}") from e
+                else:
+                    if self.logging:
+                        logging.warning(f"Request failed: {e}. Retrying in {self.retry_delay * (2**attempt)} seconds")
+                    self.time.sleep(self.retry_delay * (2**attempt))
