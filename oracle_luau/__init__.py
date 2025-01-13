@@ -11,40 +11,40 @@ class DecompilerOptions:
         if renamingType is not None:    
             self.renamingType = renamingType
 
-        if renamingType is not None:
+        if removeDotZero is not None:
             self.removeDotZero = removeDotZero
 
-        if renamingType is not None:
+        if removeFunctionEntryNote is not None:
             self.removeFunctionEntryNote = removeFunctionEntryNote
 
-        if renamingType is not None:
+        if swapConstantPosition is not None:
             self.swapConstantPosition = swapConstantPosition
 
-        if renamingType is not None:
+        if inlineWhileConditions is not None:
             self.inlineWhileConditions = inlineWhileConditions
 
-        if renamingType is not None:
+        if showFunctionLineDefined is not None:
             self.showFunctionLineDefined = showFunctionLineDefined
 
-        if renamingType is not None:
+        if removeUselessNumericForStep is not None:
             self.removeUselessNumericForStep = removeUselessNumericForStep
 
-        if renamingType is not None:
+        if removeUselessReturnInFunction is not None:
             self.removeUselessReturnInFunction = removeUselessReturnInFunction
 
-        if renamingType is not None:
+        if sugarRecursiveLocalFunctions is not None:
             self.sugarRecursiveLocalFunctions = sugarRecursiveLocalFunctions
 
-        if renamingType is not None:
+        if sugarLocalFunctions is not None:
             self.sugarLocalFunctions = sugarLocalFunctions
 
-        if renamingType is not None:
+        if sugarGlobalFunctions is not None:
             self.sugarGlobalFunctions = sugarGlobalFunctions
 
-        if renamingType is not None:
+        if sugarGenericFor is not None:
             self.sugarGenericFor = sugarGenericFor
 
-        if renamingType is not None:
+        if showFunctionDebugName is not None:
             self.showFunctionDebugName = showFunctionDebugName 
     
     def __call__(self):
